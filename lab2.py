@@ -1,15 +1,36 @@
 import threading
 import queue
-import time
 import os
 import random
 from PIL import Image, ImageOps
 
 def input_photos(input_dir="photos", num_images=10):
-    pass
+    if not os.path.exists(input_dir):
+        os.makedirs(input_dir)
+        
+    for i in range(num_images):
+        filename = os.path.join(input_dir, f"photo_{i+1}.png")
+        if not os.path.exists(filename):
+            color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+            img = Image.new('RGB', (100, 100), color=color)
+            img.save(filename)
+    print(f"Created {num_images} images in '{input_dir}'")
 
 def producer(q, input_dir, num_consumers):
-    pass
+    print(f"Producer: Scanning directory '{input_dir}'...")
+    
+    count = 0
+    with os.scandir(input_dir) as entries:
+        for entry in entries:
+            if entry.is_file() and entry.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                print(f"Producer: Found file: {entry.path}")
+                q.put(entry.path)
+                count += 1
+    
+    for _ in range(num_consumers):
+        q.put(None)
+    print(f"Producer: Finished. Added {count} tasks to the queue.")
+
 
 def consumer(q, results_q, output_dir, consumer_id):
     while True:
